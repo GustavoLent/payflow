@@ -3,15 +3,20 @@
 set -o errexit -o nounset
 
 echo ::set-output name=should_release::"true"
+echo "cheguei aqui 1"
 
 # fetch tags
 git fetch --tags
+echo "fiz o fetch"
 
 # get latest tag that looks like a semver (with or without v)
 tag=$(git for-each-ref --sort=-v:refname --count=1 --format '%(refname)' refs/tags/[0-9]*.[0-9]*.[0-9]* refs/tags/v[0-9]*.[0-9]*.[0-9]* | cut -d / -f 3-)
+echo "tentei encontrar a tag"
+echo $tag
+
 tag_commit=$(git rev-list -n 1 $tag)
 
-echo $tag
+
 
 last_major=$(bash ./semver.sh get major $tag)              
 last_minor=$(bash ./semver.sh get minor $tag)
