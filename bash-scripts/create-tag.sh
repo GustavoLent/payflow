@@ -3,37 +3,12 @@
 set -o errexit -o nounset
 
 echo ::set-output name=should_release::"true"
-echo "cheguei aqui 1"
 
 # fetch tags
 git fetch --tags
-echo "fiz o fetch"
 
 # get latest tag that looks like a semver (with or without v)
 tag=$(git for-each-ref --sort=-v:refname --count=1 --format '%(refname)' refs/tags/[0-9]*.[0-9]*.[0-9]* refs/tags/v[0-9]*.[0-9]*.[0-9]* | cut -d / -f 3-)
-echo "tentei encontrar a tag"
-echo $tag
-
-tag_commit=$(git rev-list -n 1 $tag)
-
-
-
-last_major=$(bash ./semver.sh get major $tag)              
-last_minor=$(bash ./semver.sh get minor $tag)
-last_patch=$(bash ./semver.sh get patch $tag)
-
-echo ::set-output name=last_major::$last_major
-echo ::set-output name=last_minor::$last_minor
-echo ::set-output name=last_patch::$last_patch
-
-# get current commit hafor tag
-commit=$(git rev-parse HEAD)
-
-if [ "$tag_commit" == "$commit" ]; then
-    echo "No new commits since previous tag. Skipping the tag creation..."
-    echo ::set-output name=last_tag::$tag
-    exit 0
-fi
 
 # if there are none, start tags at 0.0.0
 if [ -z "$tag" ]
@@ -42,9 +17,25 @@ then
     tag=0.0.0
 else
     log=$(git log $tag..HEAD --pretty=oneline)
+    tag_commit=$(git rev-list -n 1 $tag)
+
+    # get current commit hafor tag
+    commit=$(git rev-parse HEAD)
+
+    if [ "$tag_commit" == "$commit" ]; then
+        echo "No new commits since previous tag. Skipping the tag creation..."
+        echo ::set-output name=last_tag::$tag
+        exit 0
+    fi
 fi
 
-echo $log
+last_major=$(bash ./semver.sh get major $tag)              
+last_minor=$(bash ./semver.sh get minor $tag)
+last_patch=$(bash ./semver.sh get patch $tag)
+
+echo ::set-output name=last_major::$last_major
+echo ::set-output name=last_minor::$last_minor
+echo ::set-output name=last_patch::$last_patch
 
 # get commit logs and determine home to bump the version
 # supports #major, #minor, #patch
